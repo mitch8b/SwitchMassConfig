@@ -1,57 +1,61 @@
 #!/usr/bin/expect -f
  
 # Variables
- set hostname [lindex $argv 0]
- set username $env(USER)
- set password [lindex $argv 1]
- set enablepwd [lindex $argv 2]
+set hostname [regsub {\r$} [lindex $argv 0] ""]
+set password [regsub {\r$} [lindex $argv 1] ""]
+set enablepwd [regsub {\r$} [lindex $argv 2] ""]
+set username [regsub {\r$} [lindex $argv 3] ""]
 
 # Log config
- log_file -a ~/scripts/SwitchMassConfig/logs/config.log
- 
+log_file -a ./logs/config.log
+
 # Output current device and time
- send_user "\n"
- send_user "/***  Working $hostname @ [exec date] ***/\n"
- send_user "\n"
- 
+send_user "\n"
+send_user "/***  Working $hostname @ [exec date] ***/\n"
+send_user "\n"
+
 # Disable key check if needed
- spawn ssh -o StrictHostKeyChecking=no -o KexAlgorithms=+diffie-hellman-group14-sha1 mntc\@$hostname
- 
+spawn ssh -o StrictHostKeyChecking=no -o KexAlgorithms=+diffie-hellman-group14-sha1 $username\@$hostname
+
 # Enable SSH timeout notification
- expect {
- timeout { send_user "\nTimeout Exceeded > Check Device\n"; exit 1 }
- eof { send_user "\nSSH Connection To $hostname Failed\n"; exit 1 }
- "*#" {}
- "*assword:" {
- send "$password\n"
- }
- }
- 
+expect {
+timeout { send_user "\nTimeout Exceeded > Check Device\n"; exit 1 }
+eof { send_user "\nSSH Connection To $hostname Failed\n"; exit 1 }
+"*#" {}
+"*assword:" {
+send "$password\n"
+}
+}
+
 # Enter enable mode if not there
- expect {
- default { send_user "\nEnable Mode Failed > Check Password\n"; exit 1 }
- "*#" {}
- "*>" {
- send "enable\n"
- expect "*assword"
- send "$enablepwd\n"
- expect "*#"
- }
- }
- 
+expect {
+default { send_user "\nEnable Mode Failed > Check Password\n"; exit 1 }
+"*#" {}
+"*>" {
+send "enable\n"
+expect "*assword"
+send "$enablepwd\n"
+expect "*#"
+}
+}
+
 # Enter config mode
- send "conf t\n"
- expect "(config)#"
- 
-# Enter commands
-send "ip ssh server algorithm kex diffie-hellman-group14-sha1\n"
+send "conf t\n"
 expect "(config)#"
- 
+
+# Enter commands
+send "logging host graylog.mntc.org transport udp port 1533 session-id hostname\n"
+expect "(config)#"
+send "logging trap 6\n"
+expect "(config)#"
+send "logging source-interface vlan1\n"
+expect "(config)#"
+
 #Wrap it up
- send "end\n"
- expect "#"
- send "write mem\n"
- expect "#"
- send "exit\n"
- expect ":~\$"
- exit
+send "end\n"
+expect "#"
+send "write mem\n"
+expect "#"
+send "exit\n"
+expect ":~\$"
+exit

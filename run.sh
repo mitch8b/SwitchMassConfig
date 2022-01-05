@@ -7,21 +7,24 @@
 timestamp=`date +%Y%m%d%H%M`
  
 # Archive last config log
-logfile=config.log
+logfile=./logs/config.log
 newlogfile=$logfile.$timestamp
 cp $logfile $newlogfile
 
-Get SSH and enable passwords
+#Get SSH and enable passwords
 echo -n "Enter your SSH password "
 read -s -e password
 echo -ne '\n'
 echo -n "Enter your enable password "
 read -s -e enable
 echo -ne '\n'
+echo -n "Enter your username "
+read -s -e username
+echo -ne '\n'
 
 
 
 # Pull in device list and passwords
 for device in `cat devices.txt`; do
- ./config.exp $device $password $enable ;
+ ./config.exp $device $password $enable $username ;
  done
